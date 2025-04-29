@@ -2,7 +2,6 @@ kind: pipeline
 type: docker
 name: docker-image-pipeline
 
-
 environment:
   DOCKER_USERNAME: sanmarg11
   REPO_NAME: drone-helloworld
@@ -13,7 +12,7 @@ steps:
     privileged: true
     volumes:
       - name: dockersock
-        path: /var/run
+        path: /var/run/docker.sock
     commands:
       - docker build -t $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA .
       - docker tag $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA $DOCKER_USERNAME/$REPO_NAME:latest
