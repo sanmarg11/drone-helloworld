@@ -1,9 +1,38 @@
 kind: pipeline
 type: docker
-name: default
+name: docker-image-pipeline
 
 steps:
-  - name: say-hello
-    image: alpine
+  - name: docker build
+    image: docker:24.0.2-dind
+    privileged: true
+    volumes:
+      - name: dockersock
+        path: /var/run
     commands:
-      - echo "Hello from Drone CI!"
+      - docker build -t $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA .
+      - docker tag $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA $DOCKER_USERNAME/$REPO_NAME:latest
+
+  - name: trivy scan
+    image: aquasec/trivy:latest
+    environment:
+      TRIVY_NON_SSL: "true"
+    commands:
+      - trivy image --exit-code 0 --severity HIGH,CRITICAL $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA
+
+  - name: docker push
+    image: plugins/docker
+    settings:
+      repo: ${DOCKER_USERNAME}/${REPO_NAME}
+      tags:
+        - latest
+        - ${DRONE_COMMIT_SHA}
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
