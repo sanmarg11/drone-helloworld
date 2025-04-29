@@ -2,6 +2,11 @@ kind: pipeline
 type: docker
 name: docker-image-pipeline
 
+
+environment:
+  DOCKER_USERNAME: sanmarg11
+  REPO_NAME: drone-helloworld
+
 steps:
   - name: docker build
     image: docker:24.0.2-dind
