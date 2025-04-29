@@ -9,16 +9,19 @@ environment:
 
 steps:
   - name: docker build
-    image: docker:20-dind  # Use Docker-in-Docker 20.x
-    privileged: true
-    volumes:
-      - name: dockersock
-        path: /var/run
+    image: plugins/docker  # Use the official Docker plugin
+    settings:
+      repo: $DOCKER_USERNAME/$REPO_NAME
+      tags:
+        - latest
+        - ${DRONE_COMMIT_SHA}
+      build_args: # optional, if you need to pass build arguments
+        ARG_NAME: value
     environment:
       DOCKER_HOST: tcp://0.0.0.0:2375  # Set the correct Docker Daemon endpoint
-    commands:
-      - docker build -t $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA .
-      - docker tag $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA $DOCKER_USERNAME/$REPO_NAME:latest
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
 
   - name: trivy scan
     image: aquasec/trivy:latest
