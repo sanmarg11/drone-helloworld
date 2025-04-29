@@ -5,24 +5,23 @@ name: docker-image-pipeline
 environment:
   DOCKER_USERNAME: sanmarg11
   REPO_NAME: drone-helloworld
-  DOCKER_HOST: tcp://localhost:2375  # Ensure the pipeline connects to the correct Docker daemon
+  DOCKER_HOST: tcp://localhost:2375  # Docker daemon endpoint
 
 steps:
+  # Step for building the Docker image
   - name: docker build
-    image: plugins/docker  # Use the official Docker plugin
-    settings:
-      repo: $DOCKER_USERNAME/$REPO_NAME
-      tags:
-        - latest
-        - ${DRONE_COMMIT_SHA}
-      build_args: # optional, if you need to pass build arguments
-        ARG_NAME: value
-    environment:
-      DOCKER_HOST: tcp://0.0.0.0:2375  # Set the correct Docker Daemon endpoint
+    image: docker:20-dind  # Use Docker-in-Docker 20.x
+    privileged: true  # Required for Docker-in-Docker
     volumes:
       - name: dockersock
-        path: /var/run/docker.sock
+        path: /var/run/docker.sock  # Bind Docker socket
+    environment:
+      DOCKER_HOST: tcp://localhost:2375  # Set the Docker Daemon endpoint
+    commands:
+      - docker build -t $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA .
+      - docker tag $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA $DOCKER_USERNAME/$REPO_NAME:latest
 
+  # Step for running Trivy security scan
   - name: trivy scan
     image: aquasec/trivy:latest
     environment:
@@ -30,6 +29,7 @@ steps:
     commands:
       - trivy image --exit-code 0 --severity HIGH,CRITICAL $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA
 
+  # Step for pushing the Docker image to Docker Hub
   - name: docker push
     image: plugins/docker
     settings:
@@ -45,4 +45,4 @@ steps:
 volumes:
   - name: dockersock
     host:
-      path: /var/run/docker.sock
+      path: /var/run/docker.sock  # Use Docker socket for communication
