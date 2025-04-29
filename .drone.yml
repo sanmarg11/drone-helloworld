@@ -5,7 +5,7 @@ name: docker-image-pipeline
 environment:
   DOCKER_USERNAME: sanmarg11
   REPO_NAME: drone-helloworld
-  DOCKER_HOST: tcp://localhost:2375  # Docker daemon endpoint
+  DOCKER_HOST: tcp://0.0.0.0:2375  # Docker daemon endpoint
 
 steps:
   # Step for building the Docker image
@@ -16,7 +16,7 @@ steps:
       - name: dockersock
         path: /var/run/docker.sock  # Bind Docker socket
     environment:
-      DOCKER_HOST: tcp://localhost:2375  # Set the Docker Daemon endpoint
+      DOCKER_HOST: tcp://0.0.0.0:2375  # Set the Docker Daemon endpoint
     commands:
       - docker build -t $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA .
       - docker tag $DOCKER_USERNAME/$REPO_NAME:$DRONE_COMMIT_SHA $DOCKER_USERNAME/$REPO_NAME:latest
